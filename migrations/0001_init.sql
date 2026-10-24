@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS movies (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  tmdb_id INTEGER,
+  title TEXT NOT NULL,
+  poster_path TEXT,
+  release_year INTEGER,
+  watched INTEGER NOT NULL DEFAULT 0,
+  watched_at TEXT,
+  added_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS tags (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS movie_tags (
+  movie_id INTEGER NOT NULL REFERENCES movies(id) ON DELETE CASCADE,
+  tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+  PRIMARY KEY (movie_id, tag_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_movie_tags_tag ON movie_tags(tag_id);

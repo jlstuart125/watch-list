@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Watch List</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>🎬 Watch List</h1>
+      <button id="add-movie-btn" class="btn btn-primary">+ Add Movie</button>
+    </header>
+
+    <section class="filter-bar">
+      <div id="tag-filters" class="tag-chips"></div>
+      <label class="show-watched">
+        <input type="checkbox" id="show-watched-toggle" />
+        Show watched
+      </label>
+    </section>
+
+    <main>
+      <section id="unwatched-section">
+        <h2>To Watch</h2>
+        <div id="movie-grid" class="movie-grid"></div>
+        <p id="empty-state" class="empty-state" hidden>No movies yet — add one to get started.</p>
+      </section>
+
+      <section id="watched-section" hidden>
+        <h2>Watched</h2>
+        <div id="watched-grid" class="movie-grid"></div>
+      </section>
+    </main>
+
+    <div id="add-modal" class="modal-overlay" hidden>
+      <div class="modal">
+        <div class="modal-header">
+          <h2>Add a Movie</h2>
+          <button id="close-modal-btn" class="btn-icon" aria-label="Close">✕</button>
+        </div>
+
+        <input
+          type="text"
+          id="search-input"
+          placeholder="Search for a movie title…"
+          autocomplete="off"
+        />
+
+        <div id="search-results" class="search-results"></div>
+
+        <div id="selected-movie" class="selected-movie" hidden>
+          <img id="selected-poster" alt="" />
+          <div class="selected-movie-info">
+            <h3 id="selected-title"></h3>
+            <p id="selected-year"></p>
+            <label for="tags-input">Tags (comma separated)</label>
+            <input
+              type="text"
+              id="tags-input"
+              placeholder="e.g. October, Horror"
+              list="existing-tags"
+            />
+            <datalist id="existing-tags"></datalist>
+            <button id="confirm-add-btn" class="btn btn-primary">Add to list</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
