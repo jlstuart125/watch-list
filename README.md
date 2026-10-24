@@ -3,8 +3,8 @@
 A shared movie watch-list for two people. Search movies via TMDB, tag them
 (e.g. `October`, `Horror`), filter by tag, and check them off once watched.
 
-- **Frontend**: static HTML/CSS/JS (no build step)
-- **API**: Cloudflare Pages Functions
+- **Frontend**: static HTML/CSS/JS (no build step), served as Worker assets
+- **API**: a single Cloudflare Worker (`src/worker.js`)
 - **Database**: Cloudflare D1 (SQLite)
 
 ## One-time setup
@@ -56,19 +56,18 @@ npm run db:migrate:local    # for local dev
 npm run db:migrate:remote   # for the live database
 ```
 
-### 7. Connect the GitHub repo to Cloudflare Pages
+### 7. Connect the GitHub repo to Cloudflare Workers
 
-In the Cloudflare dashboard: **Workers & Pages → Create → Pages → Connect to
-Git** → select this repository. Leave the build command empty and set the
-build output directory to `public` (Wrangler's config already specifies
-this, but the dashboard may ask again).
+In the Cloudflare dashboard: **Workers & Pages → Create → Connect to Git** →
+select this repository. It should auto-detect `wrangler.toml` and deploy via
+`wrangler deploy` with no custom build command needed.
 
-Then, in the new Pages project's settings:
+Then, in the new Worker's settings:
 
-- **Settings → Functions → D1 database bindings**: add a binding named `DB`
-  pointing at the `watch-list` database.
-- **Settings → Environment variables**: add `TMDB_API_KEY` with your TMDB
-  key, for both Production and Preview.
+- **Settings → Bindings**: add a **D1 database** binding — variable name
+  `DB` (must match exactly), pointing at the `watch-list` database.
+- **Settings → Variables and Secrets**: add `TMDB_API_KEY` with your TMDB
+  key.
 
 From now on, every push to `main` automatically redeploys the site and API.
 
@@ -82,7 +81,7 @@ Visit the printed local URL (typically `http://localhost:8788`).
 
 ## Deploying manually
 
-Normally you just `git push` — Cloudflare Pages redeploys automatically.
+Normally you just `git push` — Cloudflare redeploys automatically.
 To deploy by hand instead:
 
 ```sh
