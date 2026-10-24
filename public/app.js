@@ -1,9 +1,19 @@
 const POSTER_BASE = "https://image.tmdb.org/t/p/w342";
+const PROVIDER_LOGO_BASE = "https://image.tmdb.org/t/p/w92";
+
+const THEMES = [
+  { id: "default", name: "Default", bg: "#f7f7f5", accent: "#e63946" },
+  { id: "theater", name: "Theater", bg: "#1b0f12", accent: "#d4a017" },
+  { id: "midnight", name: "Midnight", bg: "#0d1b2a", accent: "#4cc9f0" },
+  { id: "spooky", name: "Spooky", bg: "#0b0b0d", accent: "#ff7518" },
+  { id: "pastel", name: "Pastel", bg: "#fdf3f8", accent: "#ff8fab" },
+];
 
 const state = {
   movies: [],
   allTags: [],
   activeTags: new Set(),
+  activePicks: new Set(),
   activeTab: "towatch",
   selectedSearchResult: null,
   selectedTags: new Set(),
@@ -43,14 +53,96 @@ const el = {
   detailOverview: document.getElementById("detail-overview"),
   detailDirector: document.getElementById("detail-director"),
   detailCast: document.getElementById("detail-cast"),
+  detailProviders: document.getElementById("detail-providers"),
+  detailProvidersLink: document.getElementById("detail-providers-link"),
   detailTagPicker: document.getElementById("detail-tag-picker"),
   detailNewTagInput: document.getElementById("detail-new-tag-input"),
   detailAddTagBtn: document.getElementById("detail-add-tag-btn"),
   detailSaveBtn: document.getElementById("detail-save-btn"),
+
+  menuBtn: document.getElementById("menu-btn"),
+  menuOverlay: document.getElementById("menu-overlay"),
+  menuCloseBtn: document.getElementById("menu-close-btn"),
+  themeOptions: document.getElementById("theme-options"),
+  themeColorMeta: document.getElementById("meta-theme-color"),
 };
 
 el.choiceBtns = el.modal.querySelectorAll(".choice-btn");
 el.detailChoiceBtns = el.detailModal.querySelectorAll(".choice-btn");
+
+// --- Cookies & theme ---
+
+function getCookie(name) {
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function setCookie(name, value, days) {
+  document.cookie = `${name}=${encodeURIComponent(value)}; max-age=${days * 86400}; path=/; SameSite=Lax`;
+}
+
+function currentTheme() {
+  return document.documentElement.getAttribute("data-theme") || "default";
+}
+
+function applyTheme(themeId) {
+  if (themeId === "default") {
+    document.documentElement.removeAttribute("data-theme");
+  } else {
+    document.documentElement.setAttribute("data-theme", themeId);
+  }
+  updateThemeColorMeta();
+}
+
+function updateThemeColorMeta() {
+  requestAnimationFrame(() => {
+    const bg = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim();
+    if (bg) el.themeColorMeta.setAttribute("content", bg);
+  });
+}
+
+function renderThemeOptions() {
+  const current = currentTheme();
+
+  el.themeOptions.innerHTML = THEMES.map(
+    (t) => `
+    <button type="button" class="theme-option ${current === t.id ? "active" : ""}" data-theme="${t.id}">
+      <span class="theme-swatch" style="background:${t.bg}">
+        <span class="theme-swatch-dot" style="background:${t.accent}"></span>
+      </span>
+      <span class="theme-name">${t.name}</span>
+      ${current === t.id ? '<span class="theme-check">✓</span>' : ""}
+    </button>`
+  ).join("");
+
+  el.themeOptions.querySelectorAll(".theme-option").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.theme;
+      applyTheme(id);
+      setCookie("theme", id, 365);
+      renderThemeOptions();
+    });
+  });
+}
+
+el.menuBtn.addEventListener("click", () => {
+  renderThemeOptions();
+  el.menuOverlay.hidden = false;
+});
+
+el.menuCloseBtn.addEventListener("click", () => {
+  el.menuOverlay.hidden = true;
+});
+
+el.menuOverlay.addEventListener("click", (e) => {
+  if (e.target === el.menuOverlay) el.menuOverlay.hidden = true;
+});
+
+updateThemeColorMeta();
+
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+  if (currentTheme() === "default") updateThemeColorMeta();
+});
 
 async function loadMovies() {
   const res = await fetch("/api/movies");
@@ -65,7 +157,16 @@ async function loadTags() {
 }
 
 function renderTagFilters() {
-  el.tagFilters.innerHTML = state.allTags
+  const pickChips = ["jc", "cc"]
+    .map(
+      (pick) => `
+      <button class="chip pick-chip ${state.activePicks.has(pick) ? "active" : ""}" data-pick="${pick}">
+        ${pick.toUpperCase()}
+      </button>`
+    )
+    .join("");
+
+  const tagChips = state.allTags
     .map(
       (tag) => `
       <button class="chip ${state.activeTags.has(tag) ? "active" : ""}" data-tag="${escapeHtml(tag)}">
@@ -74,7 +175,21 @@ function renderTagFilters() {
     )
     .join("");
 
-  el.tagFilters.querySelectorAll(".chip").forEach((btn) => {
+  el.tagFilters.innerHTML = pickChips + tagChips;
+
+  el.tagFilters.querySelectorAll(".chip[data-pick]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const pick = btn.dataset.pick;
+      if (state.activePicks.has(pick)) {
+        state.activePicks.delete(pick);
+      } else {
+        state.activePicks.add(pick);
+      }
+      render();
+    });
+  });
+
+  el.tagFilters.querySelectorAll(".chip[data-tag]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const tag = btn.dataset.tag;
       if (state.activeTags.has(tag)) {
@@ -88,8 +203,14 @@ function renderTagFilters() {
 }
 
 function matchesFilters(movie) {
-  if (state.activeTags.size === 0) return true;
-  return movie.tags.some((t) => state.activeTags.has(t));
+  const tagOk =
+    state.activeTags.size === 0 || movie.tags.some((t) => state.activeTags.has(t));
+
+  const pickOk =
+    state.activePicks.size === 0 ||
+    Array.from(state.activePicks).some((p) => movie[`${p}_choice`]);
+
+  return tagOk && pickOk;
 }
 
 function render() {
@@ -278,7 +399,8 @@ el.searchInput.addEventListener("input", () => {
 async function runSearch(query) {
   const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
   const data = await res.json();
-  const results = data.results || [];
+  const alreadyAdded = new Set(state.movies.map((m) => m.tmdb_id));
+  const results = (data.results || []).filter((r) => !alreadyAdded.has(r.tmdb_id));
 
   el.searchResults.innerHTML = results
     .map(
@@ -363,6 +485,8 @@ function openDetail(movie) {
   el.detailDirector.classList.add("loading");
   el.detailCast.textContent = "Loading…";
   el.detailCast.classList.add("loading");
+  el.detailProviders.innerHTML = `<p class="detail-value loading">Loading…</p>`;
+  el.detailProvidersLink.hidden = true;
 
   renderTagChips(el.detailTagPicker, state.detail.selectedTags);
 
@@ -379,6 +503,51 @@ function openDetail(movie) {
     el.detailDirector.classList.remove("loading");
     el.detailCast.textContent = "Unknown";
     el.detailCast.classList.remove("loading");
+    el.detailProviders.innerHTML = `<p class="detail-value">Unknown</p>`;
+  }
+}
+
+function providerBadgeHtml(p) {
+  const logo = p.logo_path ? `${PROVIDER_LOGO_BASE}${p.logo_path}` : "";
+  return `
+    <div class="provider-badge">
+      ${logo ? `<img src="${logo}" alt="" />` : `<div class="provider-badge-noimg"></div>`}
+      <span>${escapeHtml(p.name)}</span>
+    </div>`;
+}
+
+function renderProviders(watchProviders) {
+  if (!watchProviders) {
+    el.detailProviders.innerHTML = `<p class="detail-value">Unavailable</p>`;
+    el.detailProvidersLink.hidden = true;
+    return;
+  }
+
+  const sections = [
+    { label: "Stream", list: watchProviders.streaming },
+    { label: "Rent", list: watchProviders.rent },
+    { label: "Buy", list: watchProviders.buy },
+  ].filter((s) => s.list && s.list.length);
+
+  if (sections.length === 0) {
+    el.detailProviders.innerHTML = `<p class="detail-value">Not currently available to stream.</p>`;
+    el.detailProvidersLink.hidden = true;
+    return;
+  }
+
+  el.detailProviders.innerHTML = sections
+    .map(
+      (s) =>
+        `<div class="provider-kind-label">${s.label}</div>` +
+        s.list.map(providerBadgeHtml).join("")
+    )
+    .join("");
+
+  if (watchProviders.link) {
+    el.detailProvidersLink.href = watchProviders.link;
+    el.detailProvidersLink.hidden = false;
+  } else {
+    el.detailProvidersLink.hidden = true;
   }
 }
 
@@ -399,11 +568,15 @@ async function fetchTmdbDetails(tmdbId) {
 
     el.detailCast.textContent = data.cast && data.cast.length ? data.cast.join(", ") : "Unknown";
     el.detailCast.classList.remove("loading");
+
+    renderProviders(data.watchProviders);
   } catch {
     el.detailDirector.textContent = "Unavailable";
     el.detailDirector.classList.remove("loading");
     el.detailCast.textContent = "Unavailable";
     el.detailCast.classList.remove("loading");
+    el.detailProviders.innerHTML = `<p class="detail-value">Unavailable</p>`;
+    el.detailProvidersLink.hidden = true;
   }
 }
 

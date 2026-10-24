@@ -13,14 +13,25 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Watch List" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f7f7f5" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#15151a" />
+    <meta name="theme-color" id="meta-theme-color" content="#f7f7f5" />
+
+    <script>
+      (function () {
+        var match = document.cookie.match(/(?:^|; )theme=([^;]*)/);
+        var theme = match ? decodeURIComponent(match[1]) : null;
+        if (theme && theme !== "default") {
+          document.documentElement.setAttribute("data-theme", theme);
+        }
+      })();
+    </script>
 
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header class="app-header">
+      <button id="menu-btn" class="btn-icon" aria-label="Menu">☰</button>
       <h1>Watch List</h1>
+      <span class="btn-icon-spacer" aria-hidden="true"></span>
     </header>
 
     <div id="tag-filters" class="tag-scroll"></div>
@@ -47,13 +58,13 @@
         </div>
 
         <div id="step-search" class="sheet-step">
+          <div id="search-results" class="search-results"></div>
           <input
             type="text"
             id="search-input"
             placeholder="Search for a movie title…"
             autocomplete="off"
           />
-          <div id="search-results" class="search-results"></div>
         </div>
 
         <div id="step-details" class="sheet-step" hidden>
@@ -118,6 +129,14 @@
         </div>
 
         <div class="field-group">
+          <label>Where to Watch</label>
+          <div id="detail-providers" class="provider-row"></div>
+          <a id="detail-providers-link" class="provider-attribution" target="_blank" rel="noopener" hidden>
+            Streaming data via JustWatch
+          </a>
+        </div>
+
+        <div class="field-group">
           <label>Tags</label>
           <div id="detail-tag-picker" class="tag-picker"></div>
           <div class="new-tag-row">
@@ -135,6 +154,20 @@
         </div>
 
         <button id="detail-save-btn" class="btn btn-primary">Save Changes</button>
+      </div>
+    </div>
+
+    <div id="menu-overlay" class="menu-overlay" hidden>
+      <div class="menu-panel">
+        <div class="menu-header">
+          <h2>Menu</h2>
+          <button id="menu-close-btn" class="btn-icon" aria-label="Close">✕</button>
+        </div>
+
+        <div class="field-group">
+          <label>Theme</label>
+          <div id="theme-options" class="theme-options"></div>
+        </div>
       </div>
     </div>
 

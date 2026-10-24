@@ -76,7 +76,7 @@ async function searchMovies(url, env) {
 async function getTmdbDetails(tmdbId, env) {
   const tmdbUrl = new URL(`https://api.themoviedb.org/3/movie/${tmdbId}`);
   tmdbUrl.searchParams.set("api_key", env.TMDB_API_KEY);
-  tmdbUrl.searchParams.set("append_to_response", "credits");
+  tmdbUrl.searchParams.set("append_to_response", "credits,watch/providers");
 
   const res = await fetch(tmdbUrl);
   if (!res.ok) {
@@ -87,12 +87,22 @@ async function getTmdbDetails(tmdbId, env) {
   const director = (data.credits?.crew || []).find((c) => c.job === "Director");
   const cast = (data.credits?.cast || []).slice(0, 6).map((c) => c.name);
 
+  const providers = data["watch/providers"]?.results?.US;
+  const toProviderList = (list) =>
+    (list || []).map((p) => ({ name: p.provider_name, logo_path: p.logo_path }));
+
   return Response.json({
     overview: data.overview || null,
     runtime: data.runtime || null,
     genres: (data.genres || []).map((g) => g.name),
     director: director ? director.name : null,
     cast,
+    watchProviders: {
+      streaming: toProviderList(providers?.flatrate),
+      rent: toProviderList(providers?.rent),
+      buy: toProviderList(providers?.buy),
+      link: providers?.link || null,
+    },
   });
 }
 
