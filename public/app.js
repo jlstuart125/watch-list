@@ -4,17 +4,15 @@ const state = {
   movies: [],
   allTags: [],
   activeTags: new Set(),
-  showWatched: false,
+  activeTab: "towatch",
   selectedSearchResult: null,
 };
 
 const el = {
   grid: document.getElementById("movie-grid"),
-  watchedSection: document.getElementById("watched-section"),
-  watchedGrid: document.getElementById("watched-grid"),
   emptyState: document.getElementById("empty-state"),
   tagFilters: document.getElementById("tag-filters"),
-  showWatchedToggle: document.getElementById("show-watched-toggle"),
+  tabBtns: document.querySelectorAll(".tab-btn"),
   addMovieBtn: document.getElementById("add-movie-btn"),
   closeModalBtn: document.getElementById("close-modal-btn"),
   modal: document.getElementById("add-modal"),
@@ -75,27 +73,25 @@ function matchesFilters(movie) {
 function render() {
   renderTagFilters();
 
-  const filtered = state.movies.filter(matchesFilters);
-  const unwatched = filtered.filter((m) => !m.watched);
-  const watched = filtered.filter((m) => m.watched);
+  const wantWatched = state.activeTab === "watched";
+  const filtered = state.movies.filter(
+    (m) => m.watched === wantWatched && matchesFilters(m)
+  );
 
-  el.grid.innerHTML = unwatched.map(movieCardHtml).join("");
-  el.emptyState.hidden = unwatched.length !== 0;
-
-  el.watchedSection.hidden = !state.showWatched;
-  el.watchedGrid.innerHTML = watched.map(movieCardHtml).join("");
-
+  el.grid.innerHTML = filtered.map(movieCardHtml).join("");
   el.grid.querySelectorAll(".movie-card").forEach(bindCardEvents);
-  el.watchedGrid.querySelectorAll(".movie-card").forEach(bindCardEvents);
+
+  el.emptyState.hidden = filtered.length !== 0;
+  el.emptyState.textContent = wantWatched
+    ? "Nothing watched yet."
+    : "No movies yet — add one to get started.";
 }
 
 function movieCardHtml(movie) {
-  const poster = movie.poster_path
-    ? `${POSTER_BASE}${movie.poster_path}`
-    : "";
+  const poster = movie.poster_path ? `${POSTER_BASE}${movie.poster_path}` : "";
 
   return `
-    <div class="movie-card ${movie.watched ? "watched" : ""}" data-id="${movie.id}">
+    <div class="movie-card ${movie.watched ? "watched" : ""}" data-id="${movie.id}" data-watched="${movie.watched}">
       ${poster ? `<img class="movie-poster" src="${poster}" alt="${escapeHtml(movie.title)} poster" />` : `<div class="movie-poster"></div>`}
       <div class="movie-card-body">
         <div class="movie-title">${escapeHtml(movie.title)}</div>
@@ -104,11 +100,10 @@ function movieCardHtml(movie) {
           ${movie.tags.map((t) => `<span class="chip">${escapeHtml(t)}</span>`).join("")}
         </div>
         <div class="movie-card-actions">
-          <label class="watch-toggle">
-            <input type="checkbox" class="watched-checkbox" ${movie.watched ? "checked" : ""} />
-            Watched
-          </label>
-          <button class="delete-btn">Delete</button>
+          <button class="icon-btn watch-btn ${movie.watched ? "watched" : ""}" aria-label="Toggle watched">
+            ${movie.watched ? "✓" : "○"}
+          </button>
+          <button class="icon-btn delete-btn" aria-label="Delete">🗑</button>
         </div>
       </div>
     </div>
@@ -117,12 +112,13 @@ function movieCardHtml(movie) {
 
 function bindCardEvents(card) {
   const id = card.dataset.id;
+  const currentlyWatched = card.dataset.watched === "true";
 
-  card.querySelector(".watched-checkbox").addEventListener("change", async (e) => {
+  card.querySelector(".watch-btn").addEventListener("click", async () => {
     await fetch(`/api/movies/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ watched: e.target.checked }),
+      body: JSON.stringify({ watched: !currentlyWatched }),
     });
     await loadMovies();
   });
@@ -135,9 +131,12 @@ function bindCardEvents(card) {
   });
 }
 
-el.showWatchedToggle.addEventListener("change", (e) => {
-  state.showWatched = e.target.checked;
-  render();
+el.tabBtns.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    state.activeTab = btn.dataset.tab;
+    el.tabBtns.forEach((b) => b.classList.toggle("active", b === btn));
+    render();
+  });
 });
 
 // --- Add movie modal ---
