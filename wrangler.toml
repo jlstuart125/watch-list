@@ -5,4 +5,4 @@ pages_build_output_dir = "public"
 [[d1_databases]]
 binding = "DB"
 database_name = "watch-list"
-database_id = "REPLACE_WITH_YOUR_DATABASE_ID"
+database_id = "62af844e-2484-4c0c-908d-e06bc5c8a6c2"
