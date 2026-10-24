@@ -143,12 +143,87 @@ main {
   opacity: 0.55;
 }
 
+.movie-card.card-exit {
+  transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+  transform: scale(0.85) translateY(8px);
+}
+
+.poster-wrap {
+  position: relative;
+}
+
 .movie-poster {
   width: 100%;
   aspect-ratio: 2 / 3;
   object-fit: cover;
   background: var(--chip-bg);
   display: block;
+}
+
+.watch-flash {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+}
+
+.watch-flash.show {
+  animation: flashInOut 0.65s ease forwards;
+}
+
+.watch-flash .stamp {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  font-weight: 800;
+  opacity: 0;
+}
+
+.watch-flash.show .stamp {
+  animation: stampPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes flashInOut {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes stampPop {
+  0% {
+    transform: scale(0) rotate(-20deg);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(1.2) rotate(8deg);
+    opacity: 1;
+  }
+  75% {
+    transform: scale(0.92) rotate(-4deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
 }
 
 .movie-card-body {
@@ -180,6 +255,21 @@ main {
   padding: 3px 10px;
   font-size: 11px;
   cursor: default;
+}
+
+.choice-badges {
+  display: flex;
+  gap: 4px;
+}
+
+.badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: var(--chip-bg);
+  color: var(--accent);
 }
 
 .movie-card-actions {
@@ -354,7 +444,7 @@ main {
 }
 
 #search-input,
-#tags-input {
+#new-tag-input {
   width: 100%;
   padding: 12px 14px;
   border: 1px solid var(--border);
@@ -362,6 +452,46 @@ main {
   background: var(--bg);
   color: var(--text);
   font-size: 16px;
+}
+
+.sheet-step[hidden] {
+  display: none;
+}
+
+.sheet-header h2 {
+  flex: 1;
+  text-align: center;
+  font-size: 17px;
+}
+
+.btn-icon-spacer {
+  display: inline-block;
+  width: 28px;
+  height: 1px;
+}
+
+.detail-meta {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.detail-overview {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.detail-value {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.detail-value.loading {
+  color: var(--text-muted);
+  font-style: italic;
 }
 
 .search-results {
@@ -404,30 +534,95 @@ main {
   font-size: 12px;
 }
 
-.selected-movie {
+.sheet-step {
   display: flex;
-  gap: 14px;
-  border-top: 1px solid var(--border);
-  padding-top: 14px;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.selected-movie img {
-  width: 84px;
-  height: 126px;
+.selected-movie-summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.selected-movie-summary img {
+  width: 64px;
+  height: 96px;
   object-fit: cover;
   border-radius: 8px;
   background: var(--chip-bg);
   flex: none;
 }
 
-.selected-movie-info {
+.selected-movie-summary h3 {
+  font-size: 16px;
+}
+
+.selected-movie-summary p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.field-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+}
+
+.field-group > label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.tag-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag-picker .chip {
+  cursor: pointer;
+}
+
+.new-tag-row {
+  display: flex;
+  gap: 8px;
+}
+
+.new-tag-row #new-tag-input {
   flex: 1;
 }
 
-.selected-movie-info label {
-  font-size: 12px;
-  color: var(--text-muted);
+.btn-secondary {
+  background: var(--chip-bg);
+  color: var(--text);
+}
+
+.choice-toggle {
+  display: flex;
+  gap: 8px;
+}
+
+.choice-btn {
+  flex: 1;
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 12px 0;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.choice-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
 }

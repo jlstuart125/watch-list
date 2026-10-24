@@ -15,6 +15,11 @@ export default {
         return listTags(env);
       }
 
+      const tmdbMatch = pathname.match(/^\/api\/tmdb\/(\d+)$/);
+      if (tmdbMatch && method === "GET") {
+        return getTmdbDetails(tmdbMatch[1], env);
+      }
+
       if (pathname === "/api/movies" && method === "GET") {
         return listMovies(url, env);
       }
@@ -68,6 +73,29 @@ async function searchMovies(url, env) {
   return Response.json({ results });
 }
 
+async function getTmdbDetails(tmdbId, env) {
+  const tmdbUrl = new URL(`https://api.themoviedb.org/3/movie/${tmdbId}`);
+  tmdbUrl.searchParams.set("api_key", env.TMDB_API_KEY);
+  tmdbUrl.searchParams.set("append_to_response", "credits");
+
+  const res = await fetch(tmdbUrl);
+  if (!res.ok) {
+    return Response.json({ error: "TMDB request failed" }, { status: 502 });
+  }
+
+  const data = await res.json();
+  const director = (data.credits?.crew || []).find((c) => c.job === "Director");
+  const cast = (data.credits?.cast || []).slice(0, 6).map((c) => c.name);
+
+  return Response.json({
+    overview: data.overview || null,
+    runtime: data.runtime || null,
+    genres: (data.genres || []).map((g) => g.name),
+    director: director ? director.name : null,
+    cast,
+  });
+}
+
 async function listTags(env) {
   const { results } = await env.DB.prepare(`SELECT name FROM tags ORDER BY name`).all();
   return Response.json(results.map((r) => r.name));
@@ -110,6 +138,8 @@ async function listMovies(url, env) {
   const movies = results.map((r) => ({
     ...r,
     watched: !!r.watched,
+    jc_choice: !!r.jc_choice,
+    cc_choice: !!r.cc_choice,
     tags: r.tags ? r.tags.split(",") : [],
   }));
 
@@ -118,16 +148,32 @@ async function listMovies(url, env) {
 
 async function createMovie(request, env) {
   const body = await request.json();
-  const { tmdb_id, title, poster_path, release_year, tags = [] } = body;
+  const {
+    tmdb_id,
+    title,
+    poster_path,
+    release_year,
+    tags = [],
+    jc_choice = false,
+    cc_choice = false,
+  } = body;
 
   if (!title) {
     return Response.json({ error: "title is required" }, { status: 400 });
   }
 
   const insert = await env.DB.prepare(
-    `INSERT INTO movies (tmdb_id, title, poster_path, release_year) VALUES (?, ?, ?, ?)`
+    `INSERT INTO movies (tmdb_id, title, poster_path, release_year, jc_choice, cc_choice)
+     VALUES (?, ?, ?, ?, ?, ?)`
   )
-    .bind(tmdb_id ?? null, title, poster_path ?? null, release_year ?? null)
+    .bind(
+      tmdb_id ?? null,
+      title,
+      poster_path ?? null,
+      release_year ?? null,
+      jc_choice ? 1 : 0,
+      cc_choice ? 1 : 0
+    )
     .run();
 
   const movieId = insert.meta.last_row_id;
@@ -147,6 +193,21 @@ async function updateMovie(request, env, id) {
 
   if (Array.isArray(body.tags)) {
     await syncMovieTags(env.DB, id, body.tags);
+  }
+
+  if (typeof body.jc_choice === "boolean" || typeof body.cc_choice === "boolean") {
+    const current = await env.DB.prepare(
+      `SELECT jc_choice, cc_choice FROM movies WHERE id = ?`
+    )
+      .bind(id)
+      .first();
+
+    const jc = typeof body.jc_choice === "boolean" ? body.jc_choice : !!current.jc_choice;
+    const cc = typeof body.cc_choice === "boolean" ? body.cc_choice : !!current.cc_choice;
+
+    await env.DB.prepare(`UPDATE movies SET jc_choice = ?, cc_choice = ? WHERE id = ?`)
+      .bind(jc ? 1 : 0, cc ? 1 : 0, id)
+      .run();
   }
 
   return Response.json({ ok: true });

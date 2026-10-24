@@ -41,35 +41,100 @@
       <div class="sheet">
         <div class="sheet-handle"></div>
         <div class="sheet-header">
-          <h2>Add a Movie</h2>
+          <button id="back-btn" class="btn-icon" aria-label="Back" hidden>←</button>
+          <h2 id="sheet-title">Add a Movie</h2>
           <button id="close-modal-btn" class="btn-icon" aria-label="Close">✕</button>
         </div>
 
-        <input
-          type="text"
-          id="search-input"
-          placeholder="Search for a movie title…"
-          autocomplete="off"
-        />
+        <div id="step-search" class="sheet-step">
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Search for a movie title…"
+            autocomplete="off"
+          />
+          <div id="search-results" class="search-results"></div>
+        </div>
 
-        <div id="search-results" class="search-results"></div>
+        <div id="step-details" class="sheet-step" hidden>
+          <div class="selected-movie-summary">
+            <img id="selected-poster" alt="" />
+            <div>
+              <h3 id="selected-title"></h3>
+              <p id="selected-year"></p>
+            </div>
+          </div>
 
-        <div id="selected-movie" class="selected-movie" hidden>
-          <img id="selected-poster" alt="" />
-          <div class="selected-movie-info">
-            <h3 id="selected-title"></h3>
-            <p id="selected-year"></p>
-            <label for="tags-input">Tags (comma separated)</label>
-            <input
-              type="text"
-              id="tags-input"
-              placeholder="e.g. October, Horror"
-              list="existing-tags"
-            />
-            <datalist id="existing-tags"></datalist>
-            <button id="confirm-add-btn" class="btn btn-primary">Add to list</button>
+          <div class="field-group">
+            <label>Tags</label>
+            <div id="tag-picker" class="tag-picker"></div>
+            <div class="new-tag-row">
+              <input type="text" id="new-tag-input" placeholder="New tag…" />
+              <button id="add-tag-btn" class="btn btn-secondary">Add</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label>Whose pick?</label>
+            <div class="choice-toggle">
+              <button type="button" class="choice-btn" data-choice="jc">JC</button>
+              <button type="button" class="choice-btn" data-choice="cc">CC</button>
+            </div>
+          </div>
+
+          <button id="confirm-add-btn" class="btn btn-primary">Add to list</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="detail-modal" class="sheet-overlay" hidden>
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <span class="btn-icon-spacer" aria-hidden="true"></span>
+          <h2>Movie Details</h2>
+          <button id="detail-close-btn" class="btn-icon" aria-label="Close">✕</button>
+        </div>
+
+        <div class="selected-movie-summary">
+          <img id="detail-poster" alt="" />
+          <div>
+            <h3 id="detail-title"></h3>
+            <p id="detail-year"></p>
+            <p id="detail-meta" class="detail-meta"></p>
           </div>
         </div>
+
+        <p id="detail-overview" class="detail-overview"></p>
+
+        <div class="field-group">
+          <label>Director</label>
+          <p id="detail-director" class="detail-value"></p>
+        </div>
+
+        <div class="field-group">
+          <label>Cast</label>
+          <p id="detail-cast" class="detail-value"></p>
+        </div>
+
+        <div class="field-group">
+          <label>Tags</label>
+          <div id="detail-tag-picker" class="tag-picker"></div>
+          <div class="new-tag-row">
+            <input type="text" id="detail-new-tag-input" placeholder="New tag…" />
+            <button id="detail-add-tag-btn" class="btn btn-secondary">Add</button>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label>Whose pick?</label>
+          <div class="choice-toggle">
+            <button type="button" class="choice-btn" data-choice="jc" id="detail-choice-jc">JC</button>
+            <button type="button" class="choice-btn" data-choice="cc" id="detail-choice-cc">CC</button>
+          </div>
+        </div>
+
+        <button id="detail-save-btn" class="btn btn-primary">Save Changes</button>
       </div>
     </div>
 
