@@ -135,7 +135,7 @@ button {
 .app-header {
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 16;
   background: var(--header-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -721,6 +721,52 @@ main {
   gap: 4px;
   max-height: 280px;
   overflow-y: auto;
+}
+
+.search-bar-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-size: 16px;
+  padding: 6px 4px;
+}
+
+.search-bar-input::placeholder {
+  color: var(--text-muted);
+}
+
+.search-bar-results {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  z-index: 14;
+  padding: 8px;
+  background: var(--surface);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  max-height: 60vh;
+}
+
+.search-bar-results[hidden] {
+  display: none;
+}
+
+.search-bar-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 12;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.search-bar-overlay[hidden] {
+  display: none;
+}
+
+body.search-active .fab,
+body.search-active .scroll-top-btn {
+  display: none;
 }
 
 .search-result {

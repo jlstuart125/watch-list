@@ -117,6 +117,14 @@ const el = {
 
   newToast: document.getElementById("new-toast"),
   newToastText: document.getElementById("new-toast-text"),
+
+  appHeader: document.querySelector(".app-header"),
+  appTitle: document.getElementById("app-title"),
+  searchBtn: document.getElementById("search-btn"),
+  searchBarCloseBtn: document.getElementById("search-bar-close-btn"),
+  searchBarInput: document.getElementById("search-bar-input"),
+  searchBarResults: document.getElementById("search-bar-results"),
+  searchBarOverlay: document.getElementById("search-bar-overlay"),
 };
 
 el.choiceBtns = el.modal.querySelectorAll(".choice-btn");
@@ -453,6 +461,87 @@ el.tabBtns.forEach((btn) => {
     el.tabBtns.forEach((b) => b.classList.toggle("active", b === btn));
     render();
   });
+});
+
+// --- Search existing movies ---
+
+function openSearchBar() {
+  el.menuBtn.hidden = true;
+  el.searchBtn.hidden = true;
+  el.appTitle.hidden = true;
+  el.sortBtn.hidden = true;
+  el.searchBarCloseBtn.hidden = false;
+  el.searchBarInput.hidden = false;
+
+  el.searchBarInput.value = "";
+  el.searchBarResults.innerHTML = "";
+  el.searchBarResults.hidden = true;
+  el.searchBarResults.style.top = `${el.appHeader.getBoundingClientRect().bottom + 10}px`;
+  el.searchBarOverlay.hidden = false;
+  document.body.classList.add("search-active");
+
+  el.searchBarInput.focus();
+}
+
+function closeSearchBar() {
+  el.menuBtn.hidden = false;
+  el.searchBtn.hidden = false;
+  el.appTitle.hidden = false;
+  el.sortBtn.hidden = false;
+  el.searchBarCloseBtn.hidden = true;
+  el.searchBarInput.hidden = true;
+
+  el.searchBarResults.hidden = true;
+  el.searchBarOverlay.hidden = true;
+  document.body.classList.remove("search-active");
+}
+
+function renderSearchBarResults(query) {
+  const q = query.trim().toLowerCase();
+
+  if (!q) {
+    el.searchBarResults.hidden = true;
+    el.searchBarResults.innerHTML = "";
+    return;
+  }
+
+  const matches = state.movies.filter((m) => m.title.toLowerCase().includes(q));
+
+  if (matches.length === 0) {
+    el.searchBarResults.innerHTML = `<p class="detail-value">No matches in your list.</p>`;
+    el.searchBarResults.hidden = false;
+    return;
+  }
+
+  el.searchBarResults.innerHTML = matches
+    .map(
+      (m, i) => `
+      <div class="search-result" data-index="${i}">
+        ${m.poster_path ? `<img src="${POSTER_BASE}${m.poster_path}" alt="" />` : `<img alt="" />`}
+        <div class="search-result-info">
+          <div>${escapeHtml(m.title)}</div>
+          <div class="year">${m.release_year ?? ""}</div>
+        </div>
+      </div>`
+    )
+    .join("");
+
+  el.searchBarResults.querySelectorAll(".search-result").forEach((node) => {
+    node.addEventListener("click", () => {
+      const movie = matches[Number(node.dataset.index)];
+      closeSearchBar();
+      openDetail(movie);
+    });
+  });
+
+  el.searchBarResults.hidden = false;
+}
+
+el.searchBtn.addEventListener("click", openSearchBar);
+el.searchBarCloseBtn.addEventListener("click", closeSearchBar);
+el.searchBarOverlay.addEventListener("click", closeSearchBar);
+el.searchBarInput.addEventListener("input", () => {
+  renderSearchBarResults(el.searchBarInput.value);
 });
 
 // --- Shared tag-picker helpers (used by both add flow and detail view) ---
@@ -854,7 +943,8 @@ function anyModalOpen() {
     !el.modal.hidden ||
     !el.detailModal.hidden ||
     !el.menuOverlay.hidden ||
-    !el.sortModal.hidden
+    !el.sortModal.hidden ||
+    !el.searchBarOverlay.hidden
   );
 }
 
@@ -881,7 +971,7 @@ function updateBodyScrollLock() {
   }
 }
 
-[el.modal, el.detailModal, el.menuOverlay, el.sortModal].forEach((overlay) => {
+[el.modal, el.detailModal, el.menuOverlay, el.sortModal, el.searchBarOverlay].forEach((overlay) => {
   new MutationObserver(updateBodyScrollLock).observe(overlay, {
     attributes: true,
     attributeFilter: ["hidden"],
