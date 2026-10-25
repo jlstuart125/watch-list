@@ -7,6 +7,7 @@ const THEMES = [
   { id: "midnight", name: "Midnight", bg: "#0d1b2a", accent: "#4cc9f0" },
   { id: "spooky", name: "Spooky", bg: "#0b0b0d", accent: "#ff7518" },
   { id: "pastel", name: "Pastel", bg: "#fdf3f8", accent: "#ff8fab" },
+  { id: "jolly", name: "Jolly", bg: "#0b2e1d", accent: "#c41e3a" },
 ];
 
 const DEFAULT_SORT = "added_desc";
@@ -26,6 +27,11 @@ const SORT_KEYS = [
     label: "Title",
     up: { id: "title_asc", detail: "A–Z" },
     down: { id: "title_desc", detail: "Z–A" },
+  },
+  {
+    label: "Runtime",
+    up: { id: "runtime_desc", detail: "Longest First" },
+    down: { id: "runtime_asc", detail: "Shortest First" },
   },
 ];
 
@@ -73,6 +79,8 @@ const el = {
   detailTitle: document.getElementById("detail-title"),
   detailYear: document.getElementById("detail-year"),
   detailMeta: document.getElementById("detail-meta"),
+  detailInfoLoading: document.getElementById("detail-info-loading"),
+  detailInfoContent: document.getElementById("detail-info-content"),
   detailOverview: document.getElementById("detail-overview"),
   detailDirector: document.getElementById("detail-director"),
   detailCast: document.getElementById("detail-cast"),
@@ -81,12 +89,19 @@ const el = {
   detailTagPicker: document.getElementById("detail-tag-picker"),
   detailNewTagInput: document.getElementById("detail-new-tag-input"),
   detailAddTagBtn: document.getElementById("detail-add-tag-btn"),
+  detailWatchedBtn: document.getElementById("detail-watched-btn"),
+  detailRemoveBtn: document.getElementById("detail-remove-btn"),
+  detailRemoveLabel: document.getElementById("detail-remove-label"),
   detailSaveBtn: document.getElementById("detail-save-btn"),
+  detailTabBtns: document.querySelectorAll(".detail-tab-btn"),
+  detailTabInfo: document.getElementById("detail-tab-info"),
+  detailTabEdit: document.getElementById("detail-tab-edit"),
 
   menuBtn: document.getElementById("menu-btn"),
   menuOverlay: document.getElementById("menu-overlay"),
   menuCloseBtn: document.getElementById("menu-close-btn"),
   themeOptions: document.getElementById("theme-options"),
+  menuAppVersion: document.getElementById("menu-app-version"),
   menuVersion: document.getElementById("menu-version"),
   menuCommit: document.getElementById("menu-commit"),
   themeColorMeta: document.getElementById("meta-theme-color"),
@@ -175,6 +190,7 @@ el.menuBtn.addEventListener("click", async () => {
   renderThemeOptions();
   el.menuOverlay.hidden = false;
   const version = await loadVersion();
+  el.menuAppVersion.textContent = `Version ${version.version}`;
   el.menuVersion.textContent = `Build ${version.id.slice(0, 8)}`;
   el.menuCommit.textContent = `Commit ${version.commit}`;
 });
@@ -322,6 +338,12 @@ function sortMovies(movies) {
       break;
     case "title_desc":
       sorted.sort((a, b) => b.title.localeCompare(a.title));
+      break;
+    case "runtime_desc":
+      sorted.sort((a, b) => (b.runtime ?? 0) - (a.runtime ?? 0));
+      break;
+    case "runtime_asc":
+      sorted.sort((a, b) => (a.runtime ?? 0) - (b.runtime ?? 0));
       break;
     default:
       sorted.sort((a, b) => b.added_at.localeCompare(a.added_at));
@@ -594,7 +616,14 @@ function openDetail(movie) {
     id: movie.id,
     selectedTags: new Set(movie.tags),
     choice: { jc: movie.jc_choice, cc: movie.cc_choice },
+    watched: movie.watched,
+    markedForRemoval: false,
   };
+
+  renderWatchedBtn();
+  el.detailRemoveBtn.classList.remove("staged");
+  el.detailRemoveLabel.textContent = "Remove";
+  showDetailTab("info");
 
   el.detailPoster.src = movie.poster_path ? `${POSTER_BASE}${movie.poster_path}` : "";
   el.detailTitle.textContent = movie.title;
@@ -602,11 +631,8 @@ function openDetail(movie) {
   el.detailMeta.textContent = "";
   el.detailOverview.textContent = "";
 
-  el.detailDirector.textContent = "Loading…";
-  el.detailDirector.classList.add("loading");
-  el.detailCast.textContent = "Loading…";
-  el.detailCast.classList.add("loading");
-  el.detailProviders.innerHTML = `<p class="detail-value loading">Loading…</p>`;
+  el.detailInfoLoading.hidden = false;
+  el.detailInfoContent.hidden = true;
   el.detailProvidersLink.hidden = true;
 
   renderTagChips(el.detailTagPicker, state.detail.selectedTags);
@@ -621,10 +647,10 @@ function openDetail(movie) {
     fetchTmdbDetails(movie.tmdb_id);
   } else {
     el.detailDirector.textContent = "Unknown";
-    el.detailDirector.classList.remove("loading");
     el.detailCast.textContent = "Unknown";
-    el.detailCast.classList.remove("loading");
     el.detailProviders.innerHTML = `<p class="detail-value">Unknown</p>`;
+    el.detailInfoLoading.hidden = true;
+    el.detailInfoContent.hidden = false;
   }
 }
 
@@ -685,20 +711,18 @@ async function fetchTmdbDetails(tmdbId) {
     el.detailMeta.textContent = metaParts.join(" · ");
 
     el.detailDirector.textContent = data.director || "Unknown";
-    el.detailDirector.classList.remove("loading");
-
     el.detailCast.textContent = data.cast && data.cast.length ? data.cast.join(", ") : "Unknown";
-    el.detailCast.classList.remove("loading");
 
     renderProviders(data.watchProviders);
   } catch {
     el.detailDirector.textContent = "Unavailable";
-    el.detailDirector.classList.remove("loading");
     el.detailCast.textContent = "Unavailable";
-    el.detailCast.classList.remove("loading");
     el.detailProviders.innerHTML = `<p class="detail-value">Unavailable</p>`;
     el.detailProvidersLink.hidden = true;
   }
+
+  el.detailInfoLoading.hidden = true;
+  el.detailInfoContent.hidden = false;
 }
 
 function closeDetail() {
@@ -709,6 +733,18 @@ function closeDetail() {
 el.detailCloseBtn.addEventListener("click", closeDetail);
 el.detailModal.addEventListener("click", (e) => {
   if (e.target === el.detailModal) closeDetail();
+});
+
+function showDetailTab(tab) {
+  el.detailTabInfo.hidden = tab !== "info";
+  el.detailTabEdit.hidden = tab !== "edit";
+  el.detailTabBtns.forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.detailTab === tab);
+  });
+}
+
+el.detailTabBtns.forEach((btn) => {
+  btn.addEventListener("click", () => showDetailTab(btn.dataset.detailTab));
 });
 
 el.detailAddTagBtn.addEventListener("click", () => {
@@ -725,18 +761,44 @@ el.detailChoiceBtns.forEach((btn) => {
   });
 });
 
+function renderWatchedBtn() {
+  el.detailWatchedBtn.textContent = state.detail.watched ? "✓" : "○";
+  el.detailWatchedBtn.classList.toggle("watched", state.detail.watched);
+}
+
+el.detailWatchedBtn.addEventListener("click", () => {
+  if (!state.detail) return;
+  state.detail.watched = !state.detail.watched;
+  renderWatchedBtn();
+});
+
+el.detailRemoveBtn.addEventListener("click", () => {
+  if (!state.detail) return;
+  state.detail.markedForRemoval = !state.detail.markedForRemoval;
+  el.detailRemoveBtn.classList.toggle("staged", state.detail.markedForRemoval);
+  el.detailRemoveLabel.textContent = state.detail.markedForRemoval
+    ? "Will remove on save"
+    : "Remove";
+});
+
 el.detailSaveBtn.addEventListener("click", async () => {
   if (!state.detail) return;
 
-  await fetch(`/api/movies/${state.detail.id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      tags: Array.from(state.detail.selectedTags),
-      jc_choice: state.detail.choice.jc,
-      cc_choice: state.detail.choice.cc,
-    }),
-  });
+  if (state.detail.markedForRemoval) {
+    if (!confirm("Remove this movie from the list?")) return;
+    await fetch(`/api/movies/${state.detail.id}`, { method: "DELETE" });
+  } else {
+    await fetch(`/api/movies/${state.detail.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tags: Array.from(state.detail.selectedTags),
+        jc_choice: state.detail.choice.jc,
+        cc_choice: state.detail.choice.cc,
+        watched: state.detail.watched,
+      }),
+    });
+  }
 
   closeDetail();
   await loadMovies();
@@ -795,6 +857,36 @@ function anyModalOpen() {
     !el.sortModal.hidden
   );
 }
+
+let savedScrollY = 0;
+
+function updateBodyScrollLock() {
+  const shouldLock = anyModalOpen();
+  const isLocked = document.body.style.position === "fixed";
+
+  if (shouldLock && !isLocked) {
+    savedScrollY = window.scrollY;
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${savedScrollY}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.overflow = "hidden";
+  } else if (!shouldLock && isLocked) {
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    document.body.style.overflow = "";
+    window.scrollTo(0, savedScrollY);
+  }
+}
+
+[el.modal, el.detailModal, el.menuOverlay, el.sortModal].forEach((overlay) => {
+  new MutationObserver(updateBodyScrollLock).observe(overlay, {
+    attributes: true,
+    attributeFilter: ["hidden"],
+  });
+});
 
 document.addEventListener(
   "touchstart",

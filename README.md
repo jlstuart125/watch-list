@@ -87,3 +87,23 @@ To deploy by hand instead:
 ```sh
 npm run deploy
 ```
+
+## Versioning
+
+`package.json`'s `version` field is the source of truth, shown in the app's
+hamburger menu (alongside the Cloudflare build ID and git commit hash,
+auto-injected the same way — see `npm run deploy`).
+
+Convention: bump the **patch** digit for a normal commit, **minor** for a
+bigger change, **major** for something that really changes how the app
+works. Default to patch unless told otherwise.
+
+```sh
+npm version patch --no-git-tag-version   # default, most commits
+npm version minor --no-git-tag-version   # a bigger update
+npm version major --no-git-tag-version   # a major update
+```
+
+`--no-git-tag-version` just bumps the number in `package.json` /
+`package-lock.json` without creating its own commit or git tag — include the
+change in the commit for the work it goes with.

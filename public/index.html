@@ -133,44 +133,87 @@
           </div>
         </div>
 
-        <p id="detail-overview" class="detail-overview"></p>
-
-        <div class="field-group">
-          <label>Director</label>
-          <p id="detail-director" class="detail-value"></p>
+        <div class="detail-tabs">
+          <button type="button" class="detail-tab-btn active" data-detail-tab="info">
+            <svg viewBox="0 0 512 512" width="15" height="15" fill="currentColor" aria-hidden="true">
+              <path
+                d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM216 336h24V272H216c-13.3 0-24-10.7-24-24s10.7-24 24-24h48c13.3 0 24 10.7 24 24v88h8c13.3 0 24 10.7 24 24s-10.7 24-24 24H216c-13.3 0-24-10.7-24-24s10.7-24 24-24zm40-144a32 32 0 1 1 0-64 32 32 0 1 1 0 64z"
+              />
+            </svg>
+            Info
+          </button>
+          <button type="button" class="detail-tab-btn" data-detail-tab="edit">
+            <svg viewBox="0 0 512 512" width="15" height="15" fill="currentColor" aria-hidden="true">
+              <path
+                d="M362.7 19.3L314.3 67.7 444.3 197.7l48.4-48.4c25-25 25-65.5 0-90.5L453.3 19.3c-25-25-65.5-25-90.5 0zM421.7 220.3L291.7 90.3 53.1 328.9c-10.7 10.7-18.5 24-22.2 38.6L.9 484.7c-2.4 9.5 .2 19.6 7 26.5s16.9 9.5 26.5 7l117.2-29.3c14.6-3.7 28-11.5 38.6-22.2L421.7 220.3z"
+              />
+            </svg>
+            Edit
+          </button>
         </div>
 
-        <div class="field-group">
-          <label>Cast</label>
-          <p id="detail-cast" class="detail-value"></p>
-        </div>
+        <div id="detail-tab-info" class="detail-tab-panel">
+          <div id="detail-info-loading" class="detail-loading">
+            <div class="spinner"></div>
+          </div>
 
-        <div class="field-group">
-          <label>Where to Watch</label>
-          <div id="detail-providers" class="provider-row"></div>
-          <a id="detail-providers-link" class="provider-attribution" target="_blank" rel="noopener" hidden>
-            Streaming data via JustWatch
-          </a>
-        </div>
+          <div id="detail-info-content" hidden>
+            <p id="detail-overview" class="detail-overview"></p>
 
-        <div class="field-group">
-          <label>Tags</label>
-          <div id="detail-tag-picker" class="tag-picker"></div>
-          <div class="new-tag-row">
-            <input type="text" id="detail-new-tag-input" placeholder="New tag…" />
-            <button id="detail-add-tag-btn" class="btn btn-secondary">Add</button>
+            <div class="field-group">
+              <label>Director</label>
+              <p id="detail-director" class="detail-value"></p>
+            </div>
+
+            <div class="field-group">
+              <label>Cast</label>
+              <p id="detail-cast" class="detail-value"></p>
+            </div>
+
+            <div class="field-group">
+              <label>Where to Watch</label>
+              <div id="detail-providers" class="provider-row"></div>
+              <a id="detail-providers-link" class="provider-attribution" target="_blank" rel="noopener" hidden>
+                Streaming data via JustWatch
+              </a>
+            </div>
           </div>
         </div>
 
-        <div class="field-group">
-          <label>Whose pick?</label>
-          <div class="choice-toggle">
-            <button type="button" class="choice-btn" data-choice="jc" id="detail-choice-jc">JC</button>
-            <button type="button" class="choice-btn" data-choice="cc" id="detail-choice-cc">CC</button>
+        <div id="detail-tab-edit" class="detail-tab-panel" hidden>
+          <div class="field-group">
+            <label>Status</label>
+            <div class="detail-status-row">
+              <div class="detail-status-item">
+                <button type="button" id="detail-watched-btn" class="icon-btn watch-btn" aria-label="Toggle watched">○</button>
+                <span id="detail-watched-label">Watched</span>
+              </div>
+              <div class="detail-status-item">
+                <button type="button" id="detail-remove-btn" class="icon-btn delete-btn" aria-label="Remove">🗑</button>
+                <span id="detail-remove-label">Remove</span>
+              </div>
+            </div>
           </div>
-        </div>
 
-        <button id="detail-save-btn" class="btn btn-primary">Save Changes</button>
+          <div class="field-group">
+            <label>Tags</label>
+            <div id="detail-tag-picker" class="tag-picker"></div>
+            <div class="new-tag-row">
+              <input type="text" id="detail-new-tag-input" placeholder="New tag…" />
+              <button id="detail-add-tag-btn" class="btn btn-secondary">Add</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label>Whose pick?</label>
+            <div class="choice-toggle">
+              <button type="button" class="choice-btn" data-choice="jc" id="detail-choice-jc">JC</button>
+              <button type="button" class="choice-btn" data-choice="cc" id="detail-choice-cc">CC</button>
+            </div>
+          </div>
+
+          <button id="detail-save-btn" class="btn btn-primary">Save Changes</button>
+        </div>
       </div>
     </div>
 
@@ -187,6 +230,7 @@
         </div>
 
         <div class="menu-version-block">
+          <p id="menu-app-version"></p>
           <p id="menu-version"></p>
           <p id="menu-commit"></p>
         </div>

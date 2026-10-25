@@ -19,6 +19,7 @@ export default {
         return Response.json({
           id: env.VERSION_METADATA?.id ?? "local",
           commit: env.GIT_COMMIT ?? "unknown",
+          version: env.APP_VERSION ?? "unknown",
         });
       }
 
@@ -113,6 +114,17 @@ async function getTmdbDetails(tmdbId, env) {
   });
 }
 
+async function getTmdbRuntime(tmdbId, env) {
+  const tmdbUrl = new URL(`https://api.themoviedb.org/3/movie/${tmdbId}`);
+  tmdbUrl.searchParams.set("api_key", env.TMDB_API_KEY);
+
+  const res = await fetch(tmdbUrl);
+  if (!res.ok) return null;
+
+  const data = await res.json();
+  return data.runtime || null;
+}
+
 async function listTags(env) {
   const { results } = await env.DB.prepare(`SELECT name FROM tags ORDER BY name`).all();
   return Response.json(results.map((r) => r.name));
@@ -179,9 +191,11 @@ async function createMovie(request, env) {
     return Response.json({ error: "title is required" }, { status: 400 });
   }
 
+  const runtime = tmdb_id ? await getTmdbRuntime(tmdb_id, env) : null;
+
   const insert = await env.DB.prepare(
-    `INSERT INTO movies (tmdb_id, title, poster_path, release_year, jc_choice, cc_choice)
-     VALUES (?, ?, ?, ?, ?, ?)`
+    `INSERT INTO movies (tmdb_id, title, poster_path, release_year, jc_choice, cc_choice, runtime)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`
   )
     .bind(
       tmdb_id ?? null,
@@ -189,7 +203,8 @@ async function createMovie(request, env) {
       poster_path ?? null,
       release_year ?? null,
       jc_choice ? 1 : 0,
-      cc_choice ? 1 : 0
+      cc_choice ? 1 : 0,
+      runtime
     )
     .run();
 

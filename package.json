@@ -1,10 +1,10 @@
 {
   "name": "watch-list",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "scripts": {
-    "dev": "wrangler dev --var GIT_COMMIT:$(git rev-parse --short HEAD)",
-    "deploy": "wrangler deploy --var GIT_COMMIT:$(git rev-parse --short HEAD)",
+    "dev": "wrangler dev --var GIT_COMMIT:$(git rev-parse --short HEAD) --var APP_VERSION:$(node -p \"require('./package.json').version\")",
+    "deploy": "wrangler deploy --var GIT_COMMIT:$(git rev-parse --short HEAD) --var APP_VERSION:$(node -p \"require('./package.json').version\")",
     "db:migrate:local": "wrangler d1 execute watch-list --local --file=./migrations/0001_init.sql",
     "db:migrate:remote": "wrangler d1 execute watch-list --remote --file=./migrations/0001_init.sql"
   },

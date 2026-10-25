@@ -16,3 +16,4 @@ binding = "VERSION_METADATA"
 
 [vars]
 GIT_COMMIT = "unknown"
+APP_VERSION = "0.0.0"
