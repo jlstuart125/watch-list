@@ -88,6 +88,7 @@ const el = {
   menuCloseBtn: document.getElementById("menu-close-btn"),
   themeOptions: document.getElementById("theme-options"),
   menuVersion: document.getElementById("menu-version"),
+  menuCommit: document.getElementById("menu-commit"),
   themeColorMeta: document.getElementById("meta-theme-color"),
 
   scrollTopBtn: document.getElementById("scroll-top-btn"),
@@ -161,20 +162,21 @@ function renderThemeOptions() {
   });
 }
 
-let cachedVersionId = null;
+let cachedVersion = null;
 
-async function loadVersionId() {
-  if (cachedVersionId) return cachedVersionId;
+async function loadVersion() {
+  if (cachedVersion) return cachedVersion;
   const res = await fetch("/api/version");
-  const data = await res.json();
-  cachedVersionId = data.id;
-  return cachedVersionId;
+  cachedVersion = await res.json();
+  return cachedVersion;
 }
 
 el.menuBtn.addEventListener("click", async () => {
   renderThemeOptions();
   el.menuOverlay.hidden = false;
-  el.menuVersion.textContent = `Build ${(await loadVersionId()).slice(0, 8)}`;
+  const version = await loadVersion();
+  el.menuVersion.textContent = `Build ${version.id.slice(0, 8)}`;
+  el.menuCommit.textContent = `Commit ${version.commit}`;
 });
 
 el.menuCloseBtn.addEventListener("click", () => {

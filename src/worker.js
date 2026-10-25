@@ -16,7 +16,10 @@ export default {
       }
 
       if (pathname === "/api/version" && method === "GET") {
-        return Response.json({ id: env.VERSION_METADATA?.id ?? "local" });
+        return Response.json({
+          id: env.VERSION_METADATA?.id ?? "local",
+          commit: env.GIT_COMMIT ?? "unknown",
+        });
       }
 
       const tmdbMatch = pathname.match(/^\/api\/tmdb\/(\d+)$/);
