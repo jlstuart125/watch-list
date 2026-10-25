@@ -1,7 +1,7 @@
 {
   "name": "watch-list",
   "private": true,
-  "version": "1.0.2",
+  "version": "1.1.0",
   "scripts": {
     "dev": "wrangler dev --var GIT_COMMIT:$(git rev-parse --short HEAD) --var APP_VERSION:$(node -p \"require('./package.json').version\")",
     "deploy": "wrangler deploy --var GIT_COMMIT:$(git rev-parse --short HEAD) --var APP_VERSION:$(node -p \"require('./package.json').version\")",

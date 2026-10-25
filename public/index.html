@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Watch List</title>
+    <title>JC Flicks</title>
 
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="favicon.png" />
@@ -11,7 +11,7 @@
 
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Watch List" />
+    <meta name="apple-mobile-web-app-title" content="JC Flicks" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="theme-color" id="meta-theme-color" content="#f7f7f5" />
 
@@ -41,7 +41,76 @@
           />
         </svg>
       </button>
-      <h1 id="app-title">Watch List</h1>
+      <h1 id="app-title">
+        <svg class="header-logo" viewBox="140 140 320 320" aria-hidden="true">
+          <defs>
+            <path id="chevrons" class="mark-cutout"
+                  d="M260 200 l30 15 v15 l-30 -15 Z
+                     M260 245 l30 15 v15 l-30 -15 Z
+                     M260 290 l30 15 v15 l-30 -15 Z"/>
+          </defs>
+
+          <g class="mark-fg">
+            <rect x="300" y="195" width="30" height="180" />
+            <rect x="260" y="195" width="30" height="180" />
+            <rect x="195" y="240" width="30" height="158" transform="rotate(-44 206.723 317.12)" />
+            <rect x="300" y="195" width="100" height="25" />
+            <rect x="300" y="350" width="100" height="25" />
+          </g>
+
+          <g class="mark-dot">
+            <circle cx="275" cy="350" r="3" />
+            <circle cx="252" cy="365" r="3" />
+            <circle cx="275" cy="365" r="3" />
+          </g>
+
+          <use href="#chevrons" />
+          <use href="#chevrons" transform="rotate(-44 275 260) translate(464.5 -15) scale(-1 1)" />
+        </svg>
+        <svg class="header-wordmark" viewBox="0 0 552 140" aria-hidden="true">
+          <g class="wordmark-fg">
+            <!-- F -->
+            <rect x="0" y="0" width="26" height="140" />
+            <rect x="0" y="0" width="90" height="26" />
+            <rect x="0" y="57" width="70" height="26" />
+
+            <!-- L -->
+            <rect x="106" y="0" width="26" height="140" />
+            <rect x="106" y="114" width="90" height="26" />
+
+            <!-- I -->
+            <rect x="212" y="0" width="26" height="140" />
+
+            <!-- C -->
+            <rect x="254" y="0" width="90" height="26" />
+            <rect x="254" y="0" width="26" height="140" />
+            <rect x="254" y="114" width="90" height="26" />
+
+            <!-- K -->
+            <rect x="360" y="0" width="26" height="140" />
+            <rect x="386" y="72" width="106.4" height="26" transform="rotate(-53.03 386 85)" />
+            <rect x="386" y="72" width="84.4" height="26" transform="rotate(40.7 386 85)" />
+
+            <!-- S -->
+            <rect x="466" y="0" width="86" height="26" />
+            <rect x="466" y="0" width="26" height="70" />
+            <rect x="466" y="57" width="86" height="26" />
+            <rect x="526" y="57" width="26" height="83" />
+            <rect x="466" y="114" width="86" height="26" />
+          </g>
+        </svg>
+        <span class="sr-only">JC Flicks</span>
+      </h1>
+      <button id="random-btn" class="btn-icon" aria-label="Random pick">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="4" />
+          <circle cx="8" cy="8" r="1.4" fill="currentColor" stroke="none" />
+          <circle cx="16" cy="8" r="1.4" fill="currentColor" stroke="none" />
+          <circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" />
+          <circle cx="8" cy="16" r="1.4" fill="currentColor" stroke="none" />
+          <circle cx="16" cy="16" r="1.4" fill="currentColor" stroke="none" />
+        </svg>
+      </button>
       <button id="sort-btn" class="btn-icon sort-btn" aria-label="Sort">
         <svg viewBox="0 0 320 512" width="18" height="18" fill="currentColor" aria-hidden="true">
           <path
@@ -268,6 +337,42 @@
         </div>
 
         <div id="sort-options" class="sort-options"></div>
+      </div>
+    </div>
+
+    <div id="random-modal" class="random-overlay" hidden>
+      <button id="random-close-btn" class="btn-icon random-close-btn" aria-label="Close">✕</button>
+
+      <div class="random-stage">
+        <div id="random-die" class="random-die" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="4" />
+            <circle cx="8" cy="8" r="1.4" fill="currentColor" stroke="none" />
+            <circle cx="16" cy="8" r="1.4" fill="currentColor" stroke="none" />
+            <circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" />
+            <circle cx="8" cy="16" r="1.4" fill="currentColor" stroke="none" />
+            <circle cx="16" cy="16" r="1.4" fill="currentColor" stroke="none" />
+          </svg>
+        </div>
+
+        <div id="random-result" class="random-result" hidden>
+          <img id="random-poster" class="random-poster" alt="" />
+          <h3 id="random-title"></h3>
+          <p id="random-year"></p>
+        </div>
+
+        <p id="random-empty" class="random-empty" hidden>No movies match the current filters.</p>
+      </div>
+
+      <div id="random-actions" class="random-actions" hidden>
+        <button id="random-reroll-btn" class="icon-btn random-reroll-btn" aria-label="Re-roll">
+          <svg viewBox="0 0 512 512" width="18" height="18" fill="currentColor" aria-hidden="true">
+            <path
+              d="M105.1 202.6c7.7-21.8 20.2-42.3 37.8-59.8c62.5-62.5 163.8-62.5 226.3 0L386.3 160H336c-17.7 0-32 14.3-32 32s14.3 32 32 32H463.5h.4c17.7 0 32-14.3 32-32V64c0-17.7-14.3-32-32-32s-32 14.3-32 32v51.2L414.4 97.6c-87.5-87.5-229.3-87.5-316.8 0C73.2 122 55.6 150.7 44.8 181.4c-5.9 16.7 2.9 34.9 19.5 40.8s34.9-2.9 40.8-19.5zM39 303.7c-5 1.5-9.8 4.2-13.7 8.2c-4 4-6.7 8.8-8.1 14c-.3 1.2-.6 2.5-.8 3.8c-.3 1.7-.4 3.4-.4 5.1V464c0 17.7 14.3 32 32 32s32-14.3 32-32V412.8l17.6 17.6c87.5 87.4 229.3 87.4 316.7 0c24.4-24.4 42.1-53.1 52.9-83.8c5.9-16.7-2.9-34.9-19.5-40.8s-34.9 2.9-40.8 19.5c-7.7 21.8-20.2 42.3-37.8 59.8c-62.5 62.5-163.8 62.5-226.3 0l-.1-.1L109.6 352H160c17.7 0 32-14.3 32-32s-14.3-32-32-32H32.4c-1.6 0-3.2 .1-4.8 .3l-.2 0c-1 .1-1.9 .3-2.9 .5s-1.9 .4-2.9 .7l-.5 .2z"
+            />
+          </svg>
+        </button>
+        <button id="random-view-btn" class="btn btn-primary">View Details</button>
       </div>
     </div>
 

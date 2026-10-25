@@ -115,6 +115,19 @@ const el = {
   sortCloseBtn: document.getElementById("sort-close-btn"),
   sortOptions: document.getElementById("sort-options"),
 
+  randomBtn: document.getElementById("random-btn"),
+  randomModal: document.getElementById("random-modal"),
+  randomCloseBtn: document.getElementById("random-close-btn"),
+  randomDie: document.getElementById("random-die"),
+  randomResult: document.getElementById("random-result"),
+  randomPoster: document.getElementById("random-poster"),
+  randomTitle: document.getElementById("random-title"),
+  randomYear: document.getElementById("random-year"),
+  randomEmpty: document.getElementById("random-empty"),
+  randomActions: document.getElementById("random-actions"),
+  randomRerollBtn: document.getElementById("random-reroll-btn"),
+  randomViewBtn: document.getElementById("random-view-btn"),
+
   newToast: document.getElementById("new-toast"),
   newToastText: document.getElementById("new-toast-text"),
 
@@ -544,6 +557,74 @@ el.searchBarInput.addEventListener("input", () => {
   renderSearchBarResults(el.searchBarInput.value);
 });
 
+// --- Random pick ---
+
+let randomPick = null;
+
+function randomPool() {
+  const wantWatched = state.activeTab === "watched";
+  return state.movies.filter((m) => m.watched === wantWatched && matchesFilters(m));
+}
+
+function playRandomRoll() {
+  const pool = randomPool();
+
+  el.randomResult.hidden = true;
+  el.randomResult.classList.remove("reveal");
+  el.randomActions.classList.remove("visible");
+  el.randomEmpty.hidden = true;
+  randomPick = null;
+
+  if (pool.length === 0) {
+    el.randomDie.hidden = true;
+    el.randomEmpty.hidden = false;
+    return;
+  }
+
+  el.randomDie.hidden = false;
+  el.randomDie.classList.remove("rolling");
+  void el.randomDie.offsetWidth; // restart the CSS animation on re-roll
+  el.randomDie.classList.add("rolling");
+
+  randomPick = pool[Math.floor(Math.random() * pool.length)];
+
+  setTimeout(() => {
+    el.randomDie.hidden = true;
+
+    el.randomPoster.src = randomPick.poster_path ? `${POSTER_BASE}${randomPick.poster_path}` : "";
+    el.randomTitle.textContent = randomPick.title;
+    el.randomYear.textContent = randomPick.release_year ?? "";
+    el.randomResult.hidden = false;
+    requestAnimationFrame(() => el.randomResult.classList.add("reveal"));
+
+    setTimeout(() => {
+      requestAnimationFrame(() => el.randomActions.classList.add("visible"));
+    }, 500);
+  }, 900);
+}
+
+function closeRandomModal() {
+  el.randomModal.hidden = true;
+}
+
+el.randomBtn.addEventListener("click", () => {
+  el.randomModal.hidden = false;
+  playRandomRoll();
+});
+
+el.randomCloseBtn.addEventListener("click", closeRandomModal);
+el.randomModal.addEventListener("click", (e) => {
+  if (e.target === el.randomModal) closeRandomModal();
+});
+
+el.randomRerollBtn.addEventListener("click", playRandomRoll);
+
+el.randomViewBtn.addEventListener("click", () => {
+  const movie = randomPick;
+  closeRandomModal();
+  if (movie) openDetail(movie);
+});
+
 // --- Shared tag-picker helpers (used by both add flow and detail view) ---
 
 function renderTagChips(container, selectedSet) {
@@ -944,7 +1025,8 @@ function anyModalOpen() {
     !el.detailModal.hidden ||
     !el.menuOverlay.hidden ||
     !el.sortModal.hidden ||
-    !el.searchBarOverlay.hidden
+    !el.searchBarOverlay.hidden ||
+    !el.randomModal.hidden
   );
 }
 
@@ -971,7 +1053,7 @@ function updateBodyScrollLock() {
   }
 }
 
-[el.modal, el.detailModal, el.menuOverlay, el.sortModal, el.searchBarOverlay].forEach((overlay) => {
+[el.modal, el.detailModal, el.menuOverlay, el.sortModal, el.searchBarOverlay, el.randomModal].forEach((overlay) => {
   new MutationObserver(updateBodyScrollLock).observe(overlay, {
     attributes: true,
     attributeFilter: ["hidden"],

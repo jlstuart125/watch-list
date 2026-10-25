@@ -1,6 +1,6 @@
 {
-  "name": "Watch List",
-  "short_name": "Watch List",
+  "name": "JC Flicks",
+  "short_name": "JC Flicks",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
