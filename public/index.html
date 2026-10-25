@@ -63,11 +63,13 @@
 
     <div id="add-modal" class="sheet-overlay" hidden>
       <div class="sheet">
-        <div class="sheet-handle"></div>
         <div class="sheet-header">
-          <button id="back-btn" class="btn-icon" aria-label="Back" hidden>←</button>
-          <h2 id="sheet-title">Add a Movie</h2>
-          <button id="close-modal-btn" class="btn-icon" aria-label="Close">✕</button>
+          <div class="sheet-handle"></div>
+          <div class="sheet-header-row">
+            <button id="back-btn" class="btn-icon" aria-label="Back" hidden>←</button>
+            <h2 id="sheet-title">Add a Movie</h2>
+            <button id="close-modal-btn" class="btn-icon" aria-label="Close">✕</button>
+          </div>
         </div>
 
         <div id="step-search" class="sheet-step">
@@ -113,11 +115,13 @@
 
     <div id="detail-modal" class="sheet-overlay" hidden>
       <div class="sheet">
-        <div class="sheet-handle"></div>
         <div class="sheet-header">
-          <span class="btn-icon-spacer" aria-hidden="true"></span>
-          <h2>Movie Details</h2>
-          <button id="detail-close-btn" class="btn-icon" aria-label="Close">✕</button>
+          <div class="sheet-handle"></div>
+          <div class="sheet-header-row">
+            <span class="btn-icon-spacer" aria-hidden="true"></span>
+            <h2>Movie Details</h2>
+            <button id="detail-close-btn" class="btn-icon" aria-label="Close">✕</button>
+          </div>
         </div>
 
         <div class="selected-movie-summary">
@@ -181,16 +185,20 @@
           <label>Theme</label>
           <div id="theme-options" class="theme-options"></div>
         </div>
+
+        <p id="menu-version" class="menu-version"></p>
       </div>
     </div>
 
     <div id="sort-modal" class="sheet-overlay" hidden>
       <div class="sheet">
-        <div class="sheet-handle"></div>
         <div class="sheet-header">
-          <span class="btn-icon-spacer" aria-hidden="true"></span>
-          <h2>Sort By</h2>
-          <button id="sort-close-btn" class="btn-icon" aria-label="Close">✕</button>
+          <div class="sheet-handle"></div>
+          <div class="sheet-header-row">
+            <span class="btn-icon-spacer" aria-hidden="true"></span>
+            <h2>Sort By</h2>
+            <button id="sort-close-btn" class="btn-icon" aria-label="Close">✕</button>
+          </div>
         </div>
 
         <div id="sort-options" class="sort-options"></div>

@@ -87,6 +87,7 @@ const el = {
   menuOverlay: document.getElementById("menu-overlay"),
   menuCloseBtn: document.getElementById("menu-close-btn"),
   themeOptions: document.getElementById("theme-options"),
+  menuVersion: document.getElementById("menu-version"),
   themeColorMeta: document.getElementById("meta-theme-color"),
 
   scrollTopBtn: document.getElementById("scroll-top-btn"),
@@ -160,9 +161,20 @@ function renderThemeOptions() {
   });
 }
 
-el.menuBtn.addEventListener("click", () => {
+let cachedVersionId = null;
+
+async function loadVersionId() {
+  if (cachedVersionId) return cachedVersionId;
+  const res = await fetch("/api/version");
+  const data = await res.json();
+  cachedVersionId = data.id;
+  return cachedVersionId;
+}
+
+el.menuBtn.addEventListener("click", async () => {
   renderThemeOptions();
   el.menuOverlay.hidden = false;
+  el.menuVersion.textContent = `Build ${(await loadVersionId()).slice(0, 8)}`;
 });
 
 el.menuCloseBtn.addEventListener("click", () => {

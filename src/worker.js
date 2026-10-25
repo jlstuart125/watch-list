@@ -15,6 +15,10 @@ export default {
         return listTags(env);
       }
 
+      if (pathname === "/api/version" && method === "GET") {
+        return Response.json({ id: env.VERSION_METADATA?.id ?? "local" });
+      }
+
       const tmdbMatch = pathname.match(/^\/api\/tmdb\/(\d+)$/);
       if (tmdbMatch && method === "GET") {
         return getTmdbDetails(tmdbMatch[1], env);
