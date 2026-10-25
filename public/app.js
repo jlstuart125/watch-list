@@ -9,12 +9,35 @@ const THEMES = [
   { id: "pastel", name: "Pastel", bg: "#fdf3f8", accent: "#ff8fab" },
 ];
 
+const DEFAULT_SORT = "added_desc";
+
+const SORT_KEYS = [
+  {
+    label: "Date Added",
+    up: { id: "added_desc", detail: "Newest First" },
+    down: { id: "added_asc", detail: "Oldest First" },
+  },
+  {
+    label: "Release Date",
+    up: { id: "release_desc", detail: "Newest First" },
+    down: { id: "release_asc", detail: "Oldest First" },
+  },
+  {
+    label: "Title",
+    up: { id: "title_asc", detail: "A–Z" },
+    down: { id: "title_desc", detail: "Z–A" },
+  },
+];
+
 const state = {
   movies: [],
   allTags: [],
   activeTags: new Set(),
   activePicks: new Set(),
   activeTab: "towatch",
+  sortBy: DEFAULT_SORT,
+  newMovieIds: new Set(),
+  locallyAddedIds: new Set(),
   selectedSearchResult: null,
   selectedTags: new Set(),
   choice: { jc: false, cc: false },
@@ -65,6 +88,18 @@ const el = {
   menuCloseBtn: document.getElementById("menu-close-btn"),
   themeOptions: document.getElementById("theme-options"),
   themeColorMeta: document.getElementById("meta-theme-color"),
+
+  scrollTopBtn: document.getElementById("scroll-top-btn"),
+
+  pullRefresh: document.getElementById("pull-refresh"),
+
+  sortBtn: document.getElementById("sort-btn"),
+  sortModal: document.getElementById("sort-modal"),
+  sortCloseBtn: document.getElementById("sort-close-btn"),
+  sortOptions: document.getElementById("sort-options"),
+
+  newToast: document.getElementById("new-toast"),
+  newToastText: document.getElementById("new-toast-text"),
 };
 
 el.choiceBtns = el.modal.querySelectorAll(".choice-btn");
@@ -136,6 +171,48 @@ el.menuCloseBtn.addEventListener("click", () => {
 
 el.menuOverlay.addEventListener("click", (e) => {
   if (e.target === el.menuOverlay) el.menuOverlay.hidden = true;
+});
+
+// --- Sort ---
+
+function renderSortOptions() {
+  el.sortOptions.innerHTML = SORT_KEYS.map((key) => {
+    const activeDir =
+      state.sortBy === key.up.id ? key.up : state.sortBy === key.down.id ? key.down : null;
+
+    return `
+      <div class="sort-row">
+        <span class="sort-row-label">
+          ${escapeHtml(key.label)}
+          ${activeDir ? `<span class="sort-row-detail">(${escapeHtml(activeDir.detail)})</span>` : ""}
+        </span>
+        <div class="sort-arrows">
+          <button type="button" class="sort-arrow-btn ${state.sortBy === key.up.id ? "active" : ""}" data-sort="${key.up.id}" aria-label="${escapeHtml(key.label)} ${escapeHtml(key.up.detail)}">↑</button>
+          <button type="button" class="sort-arrow-btn ${state.sortBy === key.down.id ? "active" : ""}" data-sort="${key.down.id}" aria-label="${escapeHtml(key.label)} ${escapeHtml(key.down.detail)}">↓</button>
+        </div>
+      </div>`;
+  }).join("");
+
+  el.sortOptions.querySelectorAll(".sort-arrow-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.sortBy = btn.dataset.sort;
+      renderSortOptions();
+      render();
+    });
+  });
+}
+
+el.sortBtn.addEventListener("click", () => {
+  renderSortOptions();
+  el.sortModal.hidden = false;
+});
+
+el.sortCloseBtn.addEventListener("click", () => {
+  el.sortModal.hidden = true;
+});
+
+el.sortModal.addEventListener("click", (e) => {
+  if (e.target === el.sortModal) el.sortModal.hidden = true;
 });
 
 updateThemeColorMeta();
@@ -213,12 +290,39 @@ function matchesFilters(movie) {
   return tagOk && pickOk;
 }
 
+function sortMovies(movies) {
+  const sorted = [...movies];
+
+  switch (state.sortBy) {
+    case "added_asc":
+      sorted.sort((a, b) => a.added_at.localeCompare(b.added_at));
+      break;
+    case "release_desc":
+      sorted.sort((a, b) => (b.release_year ?? 0) - (a.release_year ?? 0));
+      break;
+    case "release_asc":
+      sorted.sort((a, b) => (a.release_year ?? 0) - (b.release_year ?? 0));
+      break;
+    case "title_asc":
+      sorted.sort((a, b) => a.title.localeCompare(b.title));
+      break;
+    case "title_desc":
+      sorted.sort((a, b) => b.title.localeCompare(a.title));
+      break;
+    default:
+      sorted.sort((a, b) => b.added_at.localeCompare(a.added_at));
+  }
+
+  return sorted;
+}
+
 function render() {
   renderTagFilters();
+  el.sortBtn.classList.toggle("active", state.sortBy !== DEFAULT_SORT);
 
   const wantWatched = state.activeTab === "watched";
-  const filtered = state.movies.filter(
-    (m) => m.watched === wantWatched && matchesFilters(m)
+  const filtered = sortMovies(
+    state.movies.filter((m) => m.watched === wantWatched && matchesFilters(m))
   );
 
   el.grid.innerHTML = filtered.map(movieCardHtml).join("");
@@ -244,6 +348,7 @@ function movieCardHtml(movie) {
       <div class="poster-wrap">
         ${poster ? `<img class="movie-poster" src="${poster}" alt="${escapeHtml(movie.title)} poster" />` : `<div class="movie-poster"></div>`}
         <div class="watch-flash"><div class="stamp">✓</div></div>
+        ${state.newMovieIds.has(movie.id) ? `<div class="new-badge">NEW</div>` : ""}
       </div>
       <div class="movie-card-body">
         <div class="movie-title">${escapeHtml(movie.title)}</div>
@@ -450,7 +555,7 @@ el.choiceBtns.forEach((btn) => {
 el.confirmAddBtn.addEventListener("click", async () => {
   if (!state.selectedSearchResult) return;
 
-  await fetch("/api/movies", {
+  const res = await fetch("/api/movies", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -460,6 +565,8 @@ el.confirmAddBtn.addEventListener("click", async () => {
       cc_choice: state.choice.cc,
     }),
   });
+  const { id } = await res.json();
+  state.locallyAddedIds.add(id);
 
   closeModal();
   await loadMovies();
@@ -632,5 +739,144 @@ function escapeHtml(str) {
   })[c]);
 }
 
-loadMovies();
+// --- Scroll to top ---
+
+let scrollTicking = false;
+window.addEventListener(
+  "scroll",
+  () => {
+    if (scrollTicking) return;
+    scrollTicking = true;
+    requestAnimationFrame(() => {
+      el.scrollTopBtn.classList.toggle("visible", window.scrollY > 400);
+      scrollTicking = false;
+    });
+  },
+  { passive: true }
+);
+
+el.scrollTopBtn.addEventListener("click", () => {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+// --- Pull to refresh (iOS home-screen apps get no native gesture for this) ---
+
+const PULL_THRESHOLD = 70;
+const PULL_MAX = 110;
+
+function safeAreaTop() {
+  const value = getComputedStyle(document.documentElement).getPropertyValue("--safe-top");
+  return parseFloat(value) || 0;
+}
+
+let pullStartY = null;
+let pulling = false;
+let refreshing = false;
+
+function anyModalOpen() {
+  return (
+    !el.modal.hidden ||
+    !el.detailModal.hidden ||
+    !el.menuOverlay.hidden ||
+    !el.sortModal.hidden
+  );
+}
+
+document.addEventListener(
+  "touchstart",
+  (e) => {
+    if (refreshing || anyModalOpen() || window.scrollY > 0) return;
+    pullStartY = e.touches[0].clientY;
+    pulling = true;
+    el.pullRefresh.style.transition = "none";
+  },
+  { passive: true }
+);
+
+document.addEventListener(
+  "touchmove",
+  (e) => {
+    if (!pulling || pullStartY === null) return;
+    const deltaY = e.touches[0].clientY - pullStartY;
+
+    if (deltaY <= 0) {
+      el.pullRefresh.style.height = "0px";
+      el.pullRefresh.classList.remove("pulling", "ready");
+      return;
+    }
+
+    e.preventDefault();
+    const pull = Math.min(deltaY * 0.5, PULL_MAX);
+    el.pullRefresh.style.height = `${safeAreaTop() + pull}px`;
+    el.pullRefresh.classList.add("pulling");
+    el.pullRefresh.classList.toggle("ready", pull >= PULL_THRESHOLD);
+  },
+  { passive: false }
+);
+
+document.addEventListener("touchend", async () => {
+  if (!pulling) return;
+  pulling = false;
+  pullStartY = null;
+
+  const pulledEnough = el.pullRefresh.classList.contains("ready");
+  el.pullRefresh.style.transition = "height 0.2s ease";
+
+  if (pulledEnough && !refreshing) {
+    refreshing = true;
+    el.pullRefresh.style.height = `${safeAreaTop() + PULL_THRESHOLD}px`;
+    el.pullRefresh.classList.remove("ready");
+    el.pullRefresh.classList.add("refreshing");
+
+    state.newMovieIds.clear();
+    await Promise.all([loadMovies(), loadTags()]);
+    checkForNewMovies();
+    await wait(400);
+
+    el.pullRefresh.classList.remove("refreshing", "pulling");
+    el.pullRefresh.style.height = "0px";
+    refreshing = false;
+  } else {
+    el.pullRefresh.classList.remove("pulling", "ready");
+    el.pullRefresh.style.height = "0px";
+  }
+});
+
+// --- New-since-last-visit detection ---
+
+function parseSqliteTimestamp(ts) {
+  return new Date(ts.replace(" ", "T") + "Z");
+}
+
+function showNewToast(count) {
+  el.newToastText.textContent = `${count} new movie${count === 1 ? "" : "s"} added`;
+  el.newToast.classList.add("visible");
+  setTimeout(() => el.newToast.classList.remove("visible"), 3500);
+}
+
+function checkForNewMovies() {
+  const lastVisitRaw = getCookie("lastVisit");
+
+  if (lastVisitRaw) {
+    const lastVisit = new Date(lastVisitRaw);
+
+    if (!isNaN(lastVisit.getTime())) {
+      const newOnes = state.movies.filter(
+        (m) =>
+          parseSqliteTimestamp(m.added_at).getTime() > lastVisit.getTime() &&
+          !state.locallyAddedIds.has(m.id)
+      );
+
+      if (newOnes.length > 0) {
+        newOnes.forEach((m) => state.newMovieIds.add(m.id));
+        showNewToast(newOnes.length);
+        render();
+      }
+    }
+  }
+
+  setCookie("lastVisit", new Date().toISOString(), 365);
+}
+
+loadMovies().then(checkForNewMovies);
 loadTags();
