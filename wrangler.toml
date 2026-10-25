@@ -13,3 +13,6 @@ database_id = "62af844e-2484-4c0c-908d-e06bc5c8a6c2"
 
 [version_metadata]
 binding = "VERSION_METADATA"
+
+[vars]
+GIT_COMMIT = "unknown"
