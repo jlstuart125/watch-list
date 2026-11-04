@@ -15,6 +15,19 @@ export default {
         return listTags(env);
       }
 
+      if (pathname === "/api/tags" && method === "POST") {
+        return createTag(request, env);
+      }
+
+      if (pathname === "/api/tags/usage" && method === "GET") {
+        return listTagsUsage(env);
+      }
+
+      const tagMatch = pathname.match(/^\/api\/tags\/(\d+)$/);
+      if (tagMatch && method === "DELETE") {
+        return deleteTag(env, tagMatch[1]);
+      }
+
       if (pathname === "/api/version" && method === "GET") {
         return Response.json({
           id: env.VERSION_METADATA?.id ?? "local",
@@ -128,6 +141,41 @@ async function getTmdbRuntime(tmdbId, env) {
 async function listTags(env) {
   const { results } = await env.DB.prepare(`SELECT name FROM tags ORDER BY name`).all();
   return Response.json(results.map((r) => r.name));
+}
+
+async function createTag(request, env) {
+  const body = await request.json();
+  const name = (body.name || "").trim();
+
+  if (!name) {
+    return Response.json({ error: "name is required" }, { status: 400 });
+  }
+
+  await env.DB.prepare(`INSERT INTO tags (name) VALUES (?) ON CONFLICT(name) DO NOTHING`)
+    .bind(name)
+    .run();
+
+  const tag = await env.DB.prepare(`SELECT id, name FROM tags WHERE name = ?`).bind(name).first();
+
+  return Response.json(tag, { status: 201 });
+}
+
+async function listTagsUsage(env) {
+  const { results } = await env.DB.prepare(
+    `SELECT t.id, t.name, COUNT(mt.movie_id) AS count
+     FROM tags t
+     LEFT JOIN movie_tags mt ON mt.tag_id = t.id
+     GROUP BY t.id
+     ORDER BY t.name`
+  ).all();
+
+  return Response.json(results);
+}
+
+async function deleteTag(env, id) {
+  await env.DB.prepare(`DELETE FROM movie_tags WHERE tag_id = ?`).bind(id).run();
+  await env.DB.prepare(`DELETE FROM tags WHERE id = ?`).bind(id).run();
+  return Response.json({ ok: true });
 }
 
 async function listMovies(url, env) {

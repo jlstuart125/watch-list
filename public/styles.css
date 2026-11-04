@@ -1033,6 +1033,45 @@ body.search-active .scroll-top-btn {
   overscroll-behavior: contain;
 }
 
+.tag-manage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tag-manage-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 4px;
+}
+
+.tag-manage-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag-manage-count {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.tag-manage-count.unused {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.tag-manage-empty {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
 .menu-version-block {
   margin-top: auto;
   padding-top: 12px;
@@ -1246,10 +1285,8 @@ body.search-active .scroll-top-btn {
   z-index: 20;
   background: rgba(0, 0, 0, 0.65);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 28px;
   padding: 24px;
 }
 
@@ -1257,11 +1294,25 @@ body.search-active .scroll-top-btn {
   display: none;
 }
 
+.random-card {
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  background: var(--surface);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  padding: 32px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+
 .random-close-btn {
   position: absolute;
-  top: calc(16px + env(safe-area-inset-top));
-  right: 16px;
-  color: #ffffff;
+  top: 12px;
+  right: 12px;
+  color: var(--text-muted);
 }
 
 .random-stage {
@@ -1314,7 +1365,7 @@ body.search-active .scroll-top-btn {
   align-items: center;
   gap: 8px;
   text-align: center;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .random-result[hidden] {
@@ -1357,11 +1408,11 @@ body.search-active .scroll-top-btn {
 .random-result p {
   margin: 0;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-muted);
 }
 
 .random-empty {
-  color: #ffffff;
+  color: var(--text);
   font-size: 14px;
 }
 
@@ -1388,6 +1439,4 @@ body.search-active .scroll-top-btn {
 .random-reroll-btn {
   width: 48px;
   height: 48px;
-  background: rgba(255, 255, 255, 0.15);
-  color: #ffffff;
 }

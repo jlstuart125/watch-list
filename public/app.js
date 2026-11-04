@@ -101,6 +101,12 @@ const el = {
   menuOverlay: document.getElementById("menu-overlay"),
   menuCloseBtn: document.getElementById("menu-close-btn"),
   themeOptions: document.getElementById("theme-options"),
+  tagManageList: document.getElementById("tag-manage-list"),
+  editTagsBtn: document.getElementById("edit-tags-btn"),
+  tagEditModal: document.getElementById("tag-edit-modal"),
+  tagEditCloseBtn: document.getElementById("tag-edit-close-btn"),
+  tagEditNewInput: document.getElementById("tag-edit-new-input"),
+  tagEditAddBtn: document.getElementById("tag-edit-add-btn"),
   menuAppVersion: document.getElementById("menu-app-version"),
   menuVersion: document.getElementById("menu-version"),
   menuCommit: document.getElementById("menu-commit"),
@@ -215,6 +221,85 @@ el.menuBtn.addEventListener("click", async () => {
   el.menuVersion.textContent = `Build ${version.id.slice(0, 8)}`;
   el.menuCommit.textContent = `Commit ${version.commit}`;
 });
+
+el.editTagsBtn.addEventListener("click", () => {
+  el.menuOverlay.hidden = true;
+  el.tagEditNewInput.value = "";
+  el.tagEditModal.hidden = false;
+  renderTagManageList();
+});
+
+el.tagEditCloseBtn.addEventListener("click", () => {
+  el.tagEditModal.hidden = true;
+});
+
+el.tagEditModal.addEventListener("click", (e) => {
+  if (e.target === el.tagEditModal) el.tagEditModal.hidden = true;
+});
+
+el.tagEditAddBtn.addEventListener("click", async () => {
+  const name = el.tagEditNewInput.value.trim();
+  if (!name) return;
+
+  await fetch("/api/tags", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+
+  el.tagEditNewInput.value = "";
+  await renderTagManageList();
+  await loadTags();
+});
+
+async function renderTagManageList() {
+  el.tagManageList.innerHTML = `<p class="tag-manage-empty">Loading…</p>`;
+
+  const res = await fetch("/api/tags/usage");
+  const tags = await res.json();
+
+  if (tags.length === 0) {
+    el.tagManageList.innerHTML = `<p class="tag-manage-empty">No tags yet.</p>`;
+    return;
+  }
+
+  const sorted = [...tags].sort((a, b) => {
+    if ((a.count === 0) !== (b.count === 0)) return a.count === 0 ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  el.tagManageList.innerHTML = sorted
+    .map(
+      (t) => `
+      <div class="tag-manage-row" data-tag-id="${t.id}">
+        <span class="tag-manage-name">${escapeHtml(t.name)}</span>
+        <span class="tag-manage-count ${t.count === 0 ? "unused" : ""}">
+          ${t.count === 0 ? "Unused" : `${t.count} movie${t.count === 1 ? "" : "s"}`}
+        </span>
+        <button type="button" class="icon-btn delete-btn" aria-label="Delete tag">🗑</button>
+      </div>`
+    )
+    .join("");
+
+  el.tagManageList.querySelectorAll(".tag-manage-row").forEach((row) => {
+    row.querySelector(".delete-btn").addEventListener("click", async () => {
+      const tagId = row.dataset.tagId;
+      const name = row.querySelector(".tag-manage-name").textContent;
+      const inUse = row.querySelector(".tag-manage-count").textContent.trim() !== "Unused";
+
+      const message = inUse
+        ? `"${name}" is still used by some movies. Remove it anyway? It will be removed from those movies too.`
+        : `Remove the unused tag "${name}"?`;
+
+      if (!confirm(message)) return;
+
+      await fetch(`/api/tags/${tagId}`, { method: "DELETE" });
+      await renderTagManageList();
+      await loadMovies();
+      await loadTags();
+    });
+  });
+}
 
 el.menuCloseBtn.addEventListener("click", () => {
   el.menuOverlay.hidden = true;
@@ -1015,7 +1100,9 @@ function safeAreaTop() {
   return parseFloat(value) || 0;
 }
 
+let pullStartX = 0;
 let pullStartY = null;
+let pullAxis = null; // "vertical" | "horizontal" | null (undecided)
 let pulling = false;
 let refreshing = false;
 
@@ -1026,7 +1113,8 @@ function anyModalOpen() {
     !el.menuOverlay.hidden ||
     !el.sortModal.hidden ||
     !el.searchBarOverlay.hidden ||
-    !el.randomModal.hidden
+    !el.randomModal.hidden ||
+    !el.tagEditModal.hidden
   );
 }
 
@@ -1053,7 +1141,15 @@ function updateBodyScrollLock() {
   }
 }
 
-[el.modal, el.detailModal, el.menuOverlay, el.sortModal, el.searchBarOverlay, el.randomModal].forEach((overlay) => {
+[
+  el.modal,
+  el.detailModal,
+  el.menuOverlay,
+  el.sortModal,
+  el.searchBarOverlay,
+  el.randomModal,
+  el.tagEditModal,
+].forEach((overlay) => {
   new MutationObserver(updateBodyScrollLock).observe(overlay, {
     attributes: true,
     attributeFilter: ["hidden"],
@@ -1064,7 +1160,11 @@ document.addEventListener(
   "touchstart",
   (e) => {
     if (refreshing || anyModalOpen() || window.scrollY > 0) return;
+    if (e.target.closest("#tag-filters")) return; // owns its own horizontal scroll
+
+    pullStartX = e.touches[0].clientX;
     pullStartY = e.touches[0].clientY;
+    pullAxis = null;
     pulling = true;
     el.pullRefresh.style.transition = "none";
   },
@@ -1075,7 +1175,22 @@ document.addEventListener(
   "touchmove",
   (e) => {
     if (!pulling || pullStartY === null) return;
-    const deltaY = e.touches[0].clientY - pullStartY;
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - pullStartX;
+    const deltaY = touch.clientY - pullStartY;
+
+    if (pullAxis === null) {
+      // Wait for enough movement to confidently tell the gesture's direction
+      // apart, so a mostly-horizontal swipe can't get mistaken for a pull.
+      if (Math.abs(deltaX) < 10 && Math.abs(deltaY) < 10) return;
+      pullAxis = Math.abs(deltaY) > Math.abs(deltaX) * 1.2 ? "vertical" : "horizontal";
+
+      if (pullAxis === "horizontal") {
+        pulling = false;
+        pullStartY = null;
+        return;
+      }
+    }
 
     if (deltaY <= 0) {
       el.pullRefresh.style.height = "0px";
