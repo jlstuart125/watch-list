@@ -150,9 +150,9 @@ button {
 .app-header h1 {
   flex: 1;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  gap: 8px;
+  gap: 2px;
   margin: 0;
 }
 
@@ -167,9 +167,10 @@ button {
 }
 
 .header-logo {
-  height: 39px;
+  height: 23px;
   width: auto;
   color: var(--text);
+  transform: translateY(1px);
 }
 
 .header-logo .mark-fg {
